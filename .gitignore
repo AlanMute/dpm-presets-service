@@ -1,0 +1,5 @@
+/.idea
+*.exe
+*.pprof
+*.logs
+.DS_Store
