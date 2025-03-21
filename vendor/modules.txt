@@ -2,6 +2,17 @@
 ## explicit; go 1.13
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
+# github.com/armon/go-radix v1.0.0
+## explicit
+github.com/armon/go-radix
+# github.com/james-bowman/nlp v0.0.0-20210511120306-26d441fa0ded
+## explicit
+github.com/james-bowman/nlp
+github.com/james-bowman/nlp/measures/pairwise
+# github.com/james-bowman/sparse v0.0.0-20210729090128-1e6c7dd483e9
+## explicit; go 1.14
+github.com/james-bowman/sparse
+github.com/james-bowman/sparse/blas
 # github.com/klauspost/compress v1.17.11
 ## explicit; go 1.21
 github.com/klauspost/compress
@@ -14,9 +25,27 @@ github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zlib
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
+# github.com/kljensen/snowball v0.10.0
+## explicit; go 1.19
+github.com/kljensen/snowball
+github.com/kljensen/snowball/english
+github.com/kljensen/snowball/french
+github.com/kljensen/snowball/hungarian
+github.com/kljensen/snowball/norwegian
+github.com/kljensen/snowball/romance
+github.com/kljensen/snowball/russian
+github.com/kljensen/snowball/snowballword
+github.com/kljensen/snowball/spanish
+github.com/kljensen/snowball/swedish
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
+# github.com/spaolacci/murmur3 v1.1.0
+## explicit
+github.com/spaolacci/murmur3
+# github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
+## explicit; go 1.13
+github.com/texttheater/golang-levenshtein/levenshtein
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
@@ -25,7 +54,36 @@ github.com/valyala/bytebufferpool
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
+# golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
+## explicit; go 1.23.0
+golang.org/x/exp/rand
 # golang.org/x/sys v0.30.0
 ## explicit; go 1.18
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# gonum.org/v1/gonum v0.15.1
+## explicit; go 1.22
+gonum.org/v1/gonum/blas
+gonum.org/v1/gonum/blas/blas64
+gonum.org/v1/gonum/blas/cblas128
+gonum.org/v1/gonum/blas/gonum
+gonum.org/v1/gonum/floats
+gonum.org/v1/gonum/floats/scalar
+gonum.org/v1/gonum/internal/asm/c128
+gonum.org/v1/gonum/internal/asm/c64
+gonum.org/v1/gonum/internal/asm/f32
+gonum.org/v1/gonum/internal/asm/f64
+gonum.org/v1/gonum/internal/cmplx64
+gonum.org/v1/gonum/internal/math32
+gonum.org/v1/gonum/lapack
+gonum.org/v1/gonum/lapack/gonum
+gonum.org/v1/gonum/lapack/lapack64
+gonum.org/v1/gonum/mat
+gonum.org/v1/gonum/mathext
+gonum.org/v1/gonum/mathext/internal/amos
+gonum.org/v1/gonum/mathext/internal/cephes
+gonum.org/v1/gonum/mathext/internal/gonum
+gonum.org/v1/gonum/stat
+gonum.org/v1/gonum/stat/combin
+gonum.org/v1/gonum/stat/distuv
+gonum.org/v1/gonum/stat/sampleuv
