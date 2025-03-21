@@ -1,6 +1,7 @@
 package service
 
 import (
+	"sort"
 	"strings"
 	"sync"
 
@@ -67,12 +68,11 @@ func (s *Storage) UpdateProductsPreset(presetId int, products []Product) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	preset := s.presets[presetId]
-	preset.products = products
-	preset.isDone = true
+	s.presets[presetId].products = products
+	s.presets[presetId].isDone = true
 }
 
-//TODO: Тут так же будем слушать скорее всего кафку. Будет возможность обновлять отдельно товары(в случае изменения скора или цены например)
+//TODO: Тут так же будем слушать скорее всего кафку. Будет возможность обновлять отдельно товары(в случае если они только появились тобишь новые)
 
 type PresetsToProductsScore struct {
 	PresetId uint32
@@ -86,8 +86,34 @@ type ProductPresets struct {
 }
 
 func (s *Storage) UpdateProductByPresets(product ProductPresets) {
-	// тут нужно подумать ка лучше обработать такой запрос. Так как нужно учитывать если скор изменился, то поставить товар на нужное место.
-	// важно учитывать новый продукт или уже тот который есть в пресете.
+	p := Product{
+		Id:    product.ProductId,
+		Name:  product.Name,
+		Price: product.Price,
+	}
+
+	for _, presetUpdate := range product.Presets {
+		if int(presetUpdate.PresetId) >= len(s.presets) {
+			continue
+		}
+
+		s.mu.RLock()
+		preset := s.presets[presetUpdate.PresetId]
+		if !preset.isDone {
+			continue
+		}
+
+		presetProducts := make([]Product, len(preset.products), len(preset.products)+1)
+		copy(presetProducts, preset.products)
+		s.mu.RUnlock()
+
+		p.Score = presetUpdate.Score
+		presetProducts = append(presetProducts, p)
+
+		sort.Slice(preset.products, func(i, j int) bool {
+			return preset.products[i].Score > preset.products[j].Score
+		})
+	}
 }
 
 func (s *Storage) FindClosestPreset(query string) ([]Product, bool) {
