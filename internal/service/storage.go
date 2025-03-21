@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
 
@@ -9,10 +8,20 @@ import (
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
+const maxDistance = 4
+
+type Product struct {
+	Id    uint32
+	Name  string
+	Price uint32
+	Score int16
+}
+
 type Preset struct {
-	ID             int
-	Query          string
-	ProcessedQuery string
+	Id             uint32
+	processedQuery string
+	products       []Product
+	isDone         bool
 }
 
 type Storage struct {
@@ -21,12 +30,9 @@ type Storage struct {
 }
 
 func NewStorage() *Storage {
-	return &Storage{
-		presets: make([]Preset, 0),
-	}
+	return &Storage{}
 }
 
-// preprocessText: lowercase + stemming
 func preprocessText(query string) string {
 	query = strings.ToLower(query)
 	queryWords := strings.Fields(query)
@@ -39,43 +45,86 @@ func preprocessText(query string) string {
 	return strings.Join(queryWords, " ")
 }
 
-func (s *Storage) AddPreset(preset Preset) {
+func (s *Storage) CreateNewPreset(query string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	preset.ProcessedQuery = preprocessText(preset.Query)
+	preset := Preset{
+		Id:             uint32(len(s.presets)),
+		processedQuery: preprocessText(query),
+	}
+
 	s.presets = append(s.presets, preset)
+	//TODO: Здесь будет отправка запроса на майнинг в кафку
 }
 
-func (s *Storage) FindClosestPreset(query string) (int, bool) {
+// TODO: Скорее всего мы будем слушать кафку и обновлять продукты || продукты будем получать сразу отсортированные по скору, чтобы не грузить сервис выдачи
+func (s *Storage) UpdateProductsPreset(presetId int, products []Product) {
+	if presetId >= len(s.presets) || presetId < 0 || len(products) == 0 {
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	preset := s.presets[presetId]
+	preset.products = products
+	preset.isDone = true
+}
+
+//TODO: Тут так же будем слушать скорее всего кафку. Будет возможность обновлять отдельно товары(в случае изменения скора или цены например)
+
+type PresetsToProductsScore struct {
+	PresetId uint32
+	Score    int16
+}
+type ProductPresets struct {
+	ProductId uint32
+	Name      string
+	Price     uint32
+	Presets   []PresetsToProductsScore
+}
+
+func (s *Storage) UpdateProductByPresets(product ProductPresets) {
+	// тут нужно подумать ка лучше обработать такой запрос. Так как нужно учитывать если скор изменился, то поставить товар на нужное место.
+	// важно учитывать новый продукт или уже тот который есть в пресете.
+}
+
+func (s *Storage) FindClosestPreset(query string) ([]Product, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	processedQuery := preprocessText(query)
 
-	bestPresetID := -1
-	bestDistance := -1 // меньше — лучше (ближе)
+	var (
+		bestDistance = 1000
+		products     []Product
+	)
 
 	for _, preset := range s.presets {
+		if !preset.isDone {
+			continue
+		}
+
 		distance := levenshtein.DistanceForStrings(
 			[]rune(processedQuery),
-			[]rune(preset.ProcessedQuery),
+			[]rune(preset.processedQuery),
 			levenshtein.DefaultOptions,
 		)
 
-		// выбираем самый близкий пресет
-		if bestDistance == -1 || distance < bestDistance {
+		if distance < bestDistance {
 			bestDistance = distance
-			bestPresetID = preset.ID
+			products = preset.products
 		}
 	}
 
-	// Порог можно менять. Например, допустимая дистанция до 4 символов
-	const maxDistance = 4
 	if bestDistance > maxDistance {
-		logrus.Info(bestDistance, bestPresetID)
-		return 0, false
+		return products, false
 	}
 
-	return bestPresetID, true
+	return products, true
+}
+
+func (s *Storage) GetAllPresets() []Preset {
+	return s.presets
 }
