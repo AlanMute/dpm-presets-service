@@ -1,42 +1,49 @@
 package service
 
 import (
+	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
 
-	"github.com/james-bowman/nlp"
-	"github.com/james-bowman/nlp/measures/pairwise"
 	"github.com/kljensen/snowball"
-	"gonum.org/v1/gonum/mat"
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
 type Preset struct {
-	ID    int
-	Query string
+	ID             int
+	Query          string
+	ProcessedQuery string
 }
 
 type Storage struct {
-	mu          sync.RWMutex
-	presets     []Preset
-	vectoriser  *nlp.CountVectoriser
-	transformer *nlp.TfidfTransformer
+	mu      sync.RWMutex
+	presets []Preset
 }
 
 func NewStorage() *Storage {
-	vectoriser := nlp.NewCountVectoriser()
-	transformer := nlp.NewTfidfTransformer()
-
 	return &Storage{
-		presets:     make([]Preset, 0),
-		vectoriser:  vectoriser,
-		transformer: transformer,
+		presets: make([]Preset, 0),
 	}
+}
+
+// preprocessText: lowercase + stemming
+func preprocessText(query string) string {
+	query = strings.ToLower(query)
+	queryWords := strings.Fields(query)
+	for i, word := range queryWords {
+		stemmed, err := snowball.Stem(word, "russian", true)
+		if err == nil {
+			queryWords[i] = stemmed
+		}
+	}
+	return strings.Join(queryWords, " ")
 }
 
 func (s *Storage) AddPreset(preset Preset) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	preset.ProcessedQuery = preprocessText(preset.Query)
 	s.presets = append(s.presets, preset)
 }
 
@@ -44,53 +51,31 @@ func (s *Storage) FindClosestPreset(query string) (int, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	query = strings.ToLower(query)
-	queryWords := strings.Fields(query)
-	for i, word := range queryWords {
-		stemmed, _ := snowball.Stem(word, "russian", true)
-		queryWords[i] = stemmed
-	}
-	processedQuery := strings.Join(queryWords, " ")
+	processedQuery := preprocessText(query)
 
-	//TODO реалиховать сохранение пресетов с уже ловеркейсом и чекать на совпадение ниже
+	bestPresetID := -1
+	bestDistance := -1 // меньше — лучше (ближе)
+
 	for _, preset := range s.presets {
-		if strings.ToLower(preset.Query) == processedQuery {
-			return preset.ID, true
-		}
-	}
+		distance := levenshtein.DistanceForStrings(
+			[]rune(processedQuery),
+			[]rune(preset.ProcessedQuery),
+			levenshtein.DefaultOptions,
+		)
 
-	var bestPresetID int
-	var bestScore float64
-	found := false
-
-	queries := make([]string, len(s.presets))
-	for i, preset := range s.presets {
-		queries[i] = preset.Query
-	}
-
-	//TODO: Рассмотреть вариант переиспользования данной матрицы
-	matrix, _ := s.vectoriser.FitTransform(queries...)
-	tfidf, _ := s.transformer.FitTransform(matrix)
-
-	queryMatrix, _ := s.vectoriser.Transform(processedQuery)
-	queryTfidf, _ := s.transformer.Transform(queryMatrix)
-
-	queryVector := queryTfidf.(*mat.Dense).RowView(0)
-
-	for i, preset := range s.presets {
-		presetVector := tfidf.(*mat.Dense).RowView(i)
-
-		score := pairwise.CosineSimilarity(queryVector, presetVector)
-		if score > bestScore {
-			bestScore = score
+		// выбираем самый близкий пресет
+		if bestDistance == -1 || distance < bestDistance {
+			bestDistance = distance
 			bestPresetID = preset.ID
-			found = true
 		}
 	}
 
-	if bestScore < 0.5 { // Порог можно настроить
+	// Порог можно менять. Например, допустимая дистанция до 4 символов
+	const maxDistance = 4
+	if bestDistance > maxDistance {
+		logrus.Info(bestDistance, bestPresetID)
 		return 0, false
 	}
 
-	return bestPresetID, found
+	return bestPresetID, true
 }

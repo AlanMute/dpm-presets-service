@@ -6,7 +6,9 @@ require (
 	github.com/james-bowman/nlp v0.0.0-20210511120306-26d441fa0ded
 	github.com/kljensen/snowball v0.10.0
 	github.com/sirupsen/logrus v1.9.3
+	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
 	github.com/valyala/fasthttp v1.59.0
+	gonum.org/v1/gonum v0.15.1
 )
 
 require (
@@ -18,5 +20,4 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	gonum.org/v1/gonum v0.15.1 // indirect
 )

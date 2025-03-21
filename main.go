@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/AlanMute/dpm-presets-service/internal/endpoint"
+	"github.com/AlanMute/dpm-presets-service/internal/service"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"os"
@@ -13,6 +15,34 @@ var (
 )
 
 func main() {
+	storage := service.NewStorage()
+	storage.AddPreset(service.Preset{
+		ID:    0,
+		Query: "платье",
+	})
+
+	storage.AddPreset(service.Preset{ID: 1, Query: "Красное платье"})
+
+	query := "плать"
+	presetID, found := storage.FindClosestPreset(query)
+	if found {
+		fmt.Printf("Найден пресет: %d\n", presetID)
+	}
+
+	query = "криснае платьё"
+	presetID, found = storage.FindClosestPreset(query)
+	if found {
+		fmt.Printf("Найден пресет: %d\n", presetID)
+	} else {
+		fmt.Printf("А где\n")
+	}
+
+	query = "платье"
+	presetID, found = storage.FindClosestPreset(query)
+	if found {
+		fmt.Printf("Найден пресет: %d\n", presetID)
+	}
+
 	httpHandler = endpoint.NewHttpHandler()
 	go func() {
 		logrus.Info("Server was started")
